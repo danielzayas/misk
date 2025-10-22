@@ -1,0 +1,11 @@
+task_rank,pr_hyperlink,fix_commit,base_commit,issue_hyperlink
+1,https://github.com/cashapp/misk/pull/1614,e64d29fd04c15d045869172034fa1a66beb6aa6b,182d920e5a782f2daa8e5444768434dd075406d1,https://github.com/cashapp/misk/issues/1613
+2,https://github.com/cashapp/misk/pull/3449,a72a98ce738a99e8b9f0a017528eef91e7ad83b1,ad37d5ec538dfaa059fab99e8119a3e4b7982967,https://github.com/cashapp/misk/issues/3411
+3,https://github.com/cashapp/misk/pull/3402,fab6db995bc6486d390586faba60b26b9c0083bf,1e432806059b476f2358ced358e44e7924968561,https://github.com/cashapp/misk/issues/3401
+4,https://github.com/cashapp/misk/pull/343,dccfe95e8a8a4d079e4fb309e1ca8974d0ef6b9d,dfe4393441cb9ee1cfb6ad3a81f7d25e6f79fc0c,https://github.com/cashapp/misk/issues/342
+5,https://github.com/cashapp/misk/pull/2978,8946a003b54e75d4f8b491ae83f7e788ef257e4c,196d0dfe5c75afec58ac09e358033c65e3b79fdc,
+6,https://github.com/cashapp/misk/pull/2758,60f79d864b962f69400528d1e28874ac14e77e10,6c32d6105454cc8599fbf472806a5b9b278b0500,https://github.com/cashapp/misk/issues/2243
+7,https://github.com/cashapp/misk/pull/2086,af2312235982dfb8ef72d5566c9aafddd23e4da1,e052591a7040bbdc7fc0d144da8028e17baecfac,https://github.com/cashapp/misk/issues/1991
+8,https://github.com/cashapp/misk/pull/1983,c7ea3c0c322ca3db62456cd6d61a8225898cada6,2afd8c7bdd1be55a88452c760cff02f165d13450,https://github.com/cashapp/misk/issues/1933
+9,https://github.com/cashapp/misk/pull/2081,00e32576667c3e5d4da8cbb664d62776d9dee65e,ab68ed68ea3ce50dbcc4f04217b1182bcf391116,https://github.com/cashapp/misk/issues/2080
+10,https://github.com/cashapp/misk/pull/1976,bdc033c6a02cb32bcdd9340721c6e99e12e21b29,7982998a5f240e7d0fbae1fc43a2f81270f41997,https://github.com/cashapp/misk/issues/1975
