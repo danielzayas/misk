@@ -40,6 +40,22 @@ softwaremill/elasticmq
 vitess/base
 ```
 
+### Docker Containers Used for Testing
+
+When running tests, Misk automatically starts several Docker containers to provide the necessary infrastructure. Here's what each container is used for:
+
+- **mysql-80** - MySQL 8.0 database server required for misk-hibernate tests, running on port 3306 with no root password.
+- **miskTestRedis-6379** - Standalone Redis server used for Redis-related tests in misk-redis and misk-redis-lettuce modules, running on port 6379.
+- **miskTestRedisCluster-7000** - Redis cluster (3 masters with 1 slave per master) used for Redis cluster-mode tests, running on ports 7000-7005.
+- **misk-spanner-testing** - Google Cloud Spanner emulator used for misk-gcp tests, running on ports 9010 and 9020.
+- **misk-postgres-testing** - PostgreSQL database used for JDBC and PostgreSQL-specific tests, running on port 5432.
+- **misk-tidb-testing** - TiDB database used for distributed SQL database tests, running on ports 4000 and 10080.
+- **vitess_test_db** - Vitess test database container used for general Vitess integration tests in misk-vitess and misk-hibernate modules.
+- **vitess_query_hints_integ_test_db** - Vitess test database container used specifically for query hints integration tests.
+- **plugin_test_vitess_db** - Vitess test database container used for Vitess database gradle plugin tests.
+
+These containers are automatically managed by Gradle tasks and will be started as needed during test execution. The Redis containers can also be started manually using `gradle startRedis` and `gradle startRedisCluster` tasks.
+
 ## Breaking changes
 
 **Note:** Remember to document breaking changes in [CHANGELOG.md](CHANGELOG.md).
