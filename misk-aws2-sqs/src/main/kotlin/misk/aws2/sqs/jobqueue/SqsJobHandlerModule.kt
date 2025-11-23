@@ -3,7 +3,7 @@ package misk.aws2.sqs.jobqueue
 import misk.ReadyService
 import misk.ServiceModule
 import misk.annotation.ExperimentalMiskApi
-import misk.inject.AsyncKAbstractModule
+import misk.inject.AsyncModule
 import misk.inject.KAbstractModule
 import misk.jobqueue.QueueName
 import misk.jobqueue.v2.JobHandler
@@ -15,10 +15,14 @@ import kotlin.reflect.KClass
 class SqsJobHandlerModule private constructor(
   private val queueName: QueueName,
   private val handler: KClass<out JobHandler>,
-) : AsyncKAbstractModule() {
+) : AsyncModule, KAbstractModule() {
   override fun configure() {
     install(CommonModule(queueName, handler))
-    install(ServiceModule<SubscriptionService>().dependsOn<ReadyService>())
+
+    // TODO remove explicit inline environment variable check once AsyncModule filtering in Guice is working
+    if (!System.getenv("DISABLE_ASYNC_TASKS").toBoolean()) {
+      install(ServiceModule<SubscriptionService>().dependsOn<ReadyService>())
+    }
   }
 
   @OptIn(ExperimentalMiskApi::class)

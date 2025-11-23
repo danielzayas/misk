@@ -4,6 +4,7 @@ package misk.mcp
 
 import io.modelcontextprotocol.kotlin.sdk.CallToolRequest
 import io.modelcontextprotocol.kotlin.sdk.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.EmptyJsonObject
 import io.modelcontextprotocol.kotlin.sdk.PromptMessageContent
 import io.modelcontextprotocol.kotlin.sdk.TextContent
 import io.modelcontextprotocol.kotlin.sdk.Tool
@@ -12,11 +13,10 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.serializer
 import misk.annotation.ExperimentalMiskApi
-import misk.mcp.internal.McpJson
 import misk.mcp.internal.generateJsonSchema
 import kotlin.reflect.KClass
+import kotlin.reflect.KType
 import kotlin.reflect.full.allSupertypes
 
 /**
@@ -202,8 +202,13 @@ abstract class McpTool<I : Any> {
    */
   open val openWorldHint: Boolean = true
 
+  /**
+   * Tool metadata that will be included in the tool definition.
+   */
+  open val _meta: JsonObject? = null
+
   internal val inputSchema: Tool.Input by lazy {
-    val schema = inputClass.generateJsonSchema()
+    val schema = inputType.generateJsonSchema()
     Tool.Input(
       properties = requireNotNull(schema["properties"] as? JsonObject) {
         "Input schema must have properties defined"
@@ -220,13 +225,13 @@ abstract class McpTool<I : Any> {
   internal suspend fun handler(request: CallToolRequest): CallToolResult {
     // Parse the input arguments from the request
     val parsedInput = try {
-      McpJson.decodeFromJsonElement(inputClass.serializer(), request.arguments)
+      request.arguments.decode(inputType.serializer().cast<I>())
     } catch (e: SerializationException) {
       return ToolResult(
         TextContent(
           "Failed to parse input for tool '$name'. " +
-            "Expected input type: ${inputClass.simpleName}. " +
-            "Error: ${e.message}",
+              "Expected input type: $inputType. " +
+              "Error: ${e.message}",
         ),
         isError = true,
       ).toCallToolResult()
@@ -234,8 +239,8 @@ abstract class McpTool<I : Any> {
       return ToolResult(
         TextContent(
           "Failed to parse input for tool '$name'. " +
-            "Expected input type: ${inputClass.simpleName}. " +
-            "Error: ${e.message}",
+              "Expected input type: $inputType. " +
+              "Error: ${e.message}",
         ),
         isError = true,
       ).toCallToolResult()
@@ -260,18 +265,30 @@ abstract class McpTool<I : Any> {
   protected fun ToolResult(
     vararg results: PromptMessageContent,
     isError: Boolean = false,
-    _meta: JsonObject = JsonObject(emptyMap()),
+    _meta: JsonObject = EmptyJsonObject
   ): ToolResult = ToolResult(results.toList(), isError, _meta)
+
+  protected inline fun <reified T : Any> ToolResult(
+    vararg results: PromptMessageContent,
+    isError: Boolean = false,
+    _meta: T? = null,
+  ): ToolResult = ToolResult(results.toList(), isError, _meta.encode())
 
   protected fun ToolResult(
     result: List<PromptMessageContent>,
     isError: Boolean = false,
-    _meta: JsonObject = JsonObject(emptyMap()),
+    _meta: JsonObject = EmptyJsonObject
   ): ToolResult = PromptToolResult(
     result = result,
     isError = isError,
     _meta = _meta,
   )
+
+  protected inline fun <reified T : Any> ToolResult(
+    results: List<PromptMessageContent>,
+    isError: Boolean = false,
+    _meta: T? = null,
+  ): ToolResult = ToolResult(results, isError, _meta.encode())
 
   protected open fun ToolResult.toCallToolResult() = when (this) {
     is PromptToolResult -> CallToolResult(
@@ -279,24 +296,24 @@ abstract class McpTool<I : Any> {
       isError = isError,
       _meta = _meta,
     )
-
     else -> {
       throw IllegalArgumentException("${this::class.simpleName} is not supported by this tool: $name")
     }
   }
 
+
   abstract suspend fun handle(input: I): ToolResult
 
-  private val inputClass: KClass<I> by lazy {
+  private val inputType: KType by lazy {
     @Suppress("UNCHECKED_CAST")
     this::class.allSupertypes
       .first { type ->
         (type.classifier as? KClass<*>)?.simpleName?.let { simpleName ->
           simpleName == McpTool::class.simpleName
-            || simpleName == StructuredMcpTool::class.simpleName
+              || simpleName == StructuredMcpTool::class.simpleName
         } ?: false
       }
-      .arguments.first().type!!.classifier as KClass<I>
+      .arguments.first().type!!
   }
 }
 
@@ -490,7 +507,7 @@ abstract class StructuredMcpTool<I : Any, O : Any> : McpTool<I>() {
 
 
   override val outputSchema: Tool.Output by lazy {
-    val schema = outputClass.generateJsonSchema()
+    val schema = outputType.generateJsonSchema()
     Tool.Output(
       properties = requireNotNull(schema["properties"] as? JsonObject) {
         "Output schema must have properties defined"
@@ -512,12 +529,18 @@ abstract class StructuredMcpTool<I : Any, O : Any> : McpTool<I>() {
   protected fun ToolResult(
     result: O,
     isError: Boolean = false,
-    _meta: JsonObject = JsonObject(emptyMap()),
+    _meta: JsonObject = EmptyJsonObject
   ): ToolResult = StructuredToolResult(
     result = result,
     isError = isError,
     _meta = _meta,
   )
+
+  protected inline fun <reified T : Any> ToolResult(
+    result: O,
+    isError: Boolean = false,
+    _meta: T? = null,
+  ): ToolResult = ToolResult(result, isError, _meta.encode())
 
   @OptIn(InternalSerializationApi::class)
   override fun ToolResult.toCallToolResult(): CallToolResult {
@@ -530,7 +553,8 @@ abstract class StructuredMcpTool<I : Any, O : Any> : McpTool<I>() {
 
       is StructuredToolResult<*> -> {
         @Suppress("UNCHECKED_CAST")
-        val serializedOutput = McpJson.encodeToJsonElement(outputClass.serializer(), result as O) as JsonObject
+        val typeResult = result as O
+        val serializedOutput: JsonObject = typeResult.encode(outputType.serializer().cast())
         CallToolResult(
           // For backwards compatibility
           // See: [https://modelcontextprotocol.io/specification/2025-06-18/server/tools#structured-content]
@@ -543,7 +567,7 @@ abstract class StructuredMcpTool<I : Any, O : Any> : McpTool<I>() {
     }
   }
 
-  private val outputClass: KClass<O> by lazy {
+  private val outputType: KType by lazy {
     @Suppress("UNCHECKED_CAST")
     this::class.allSupertypes
       .first { type ->
@@ -551,6 +575,6 @@ abstract class StructuredMcpTool<I : Any, O : Any> : McpTool<I>() {
           simpleName == StructuredMcpTool::class.simpleName
         } ?: false
       }
-      .arguments.last().type!!.classifier as KClass<O>
+      .arguments.last().type!!
   }
 }
