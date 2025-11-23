@@ -1,5 +1,6 @@
 git a.gradle
 .gradletasknamecache
+.gradle/
 **/out/
 build
 .idea
